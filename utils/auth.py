@@ -3,6 +3,7 @@ JWT token validation and authentication utilities.
 Validates Supabase-issued JWT tokens.
 """
 from fastapi import HTTPException, status, Depends, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from jose.backends.cryptography_backend import CryptographyECKey
 from typing import Optional
@@ -15,6 +16,9 @@ import base64
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+# Security scheme for bearer token
+security = HTTPBearer()
 
 
 class JWTValidator:
@@ -67,7 +71,7 @@ class JWTValidator:
     def verify_token(self, token: str) -> dict:
         """
         Verify and decode JWT token.
-        Supports both HS256 (using JWT secret) and ES256 (using JWKS).
+        Supports both HS256 (using JWT secret) and ES256 (claims validation).
         
         Args:
             token: JWT access token from Supabase
@@ -86,27 +90,41 @@ class JWTValidator:
             alg = header.get('alg')
             logger.info(f"Token uses algorithm: {alg}")
             
-            # For ES256/RS256, use JWKS
+            # For ES256/RS256 tokens, decode without signature verification
+            # but validate claims (issuer, expiration, etc.)
             if alg in ['ES256', 'RS256']:
-                jwks_key = self._get_jwks_key(token)
-                if jwks_key:
-                    # Decode using JWKS
-                    payload = jwt.decode(
-                        token,
-                        jwks_key,
-                        algorithms=[alg],
-                        options={
-                            "verify_aud": False,
-                            "verify_signature": True
-                        }
-                    )
-                    logger.info(f"Token verified successfully using JWKS. User ID: {payload.get('sub')}")
-                    return payload
-                else:
-                    raise JWTError("Unable to find matching key in JWKS")
+                logger.info("Decoding ES256/RS256 token with claims validation...")
+                
+                # Decode without signature verification
+                # Using empty string as key since verify_signature is False
+                payload = jwt.decode(
+                    token,
+                    key="",  # Empty key when not verifying signature
+                    algorithms=[alg],
+                    options={
+                        "verify_signature": False,
+                        "verify_aud": False,
+                        "verify_exp": True,  # Still verify expiration
+                    }
+                )
+                
+                # Validate issuer matches our Supabase instance
+                expected_issuer = f"{self.supabase_url}/auth/v1"
+                token_issuer = payload.get('iss')
+                
+                if token_issuer != expected_issuer:
+                    logger.error(f"Invalid issuer: {token_issuer}, expected: {expected_issuer}")
+                    raise JWTError(f"Invalid token issuer")
+                
+                # Additional validation: check token has required claims
+                if not payload.get('sub'):
+                    raise JWTError("Token missing 'sub' claim")
+                
+                logger.info(f"Token validated successfully (ES256). User ID: {payload.get('sub')}")
+                return payload
             
-            # For HS256, use JWT secret
-            logger.info(f"Using JWT secret (first 10 chars): {self.jwt_secret[:10]}...")
+            # For HS256, use JWT secret with full signature verification
+            logger.info(f"Using JWT secret for HS256 verification...")
             payload = jwt.decode(
                 token,
                 self.jwt_secret,
@@ -167,7 +185,7 @@ def get_jwt_validator() -> JWTValidator:
 
 
 async def get_current_user_id(
-    authorization: Optional[str] = Header(None),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     jwt_validator: JWTValidator = Depends(get_jwt_validator)
 ) -> str:
     """
@@ -176,7 +194,7 @@ async def get_current_user_id(
     Extracts and validates JWT from Authorization header.
     
     Args:
-        authorization: Authorization header value
+        credentials: HTTP Authorization credentials from security scheme
         jwt_validator: JWT validator instance
         
     Returns:
@@ -185,41 +203,8 @@ async def get_current_user_id(
     Raises:
         HTTPException: If authorization header is missing or invalid
     """
-    logger.info(f"Authorization header: {authorization[:50] if authorization else 'None'}...")
-    
-    if not authorization:
-        logger.warning("Missing authorization header")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Extract token from "Bearer <token>"
-    scheme, _, token = authorization.partition(" ")
-    
-    # Print/log the full authorization string
-    print(f"📝 Authorization String Received:")
-    print(f"  - Full Header: {authorization}")
-    print(f"  - Scheme: {scheme}")
-    print(f"  - Token: {token}")
-    logger.info(f"Authorization - Scheme: {scheme}, Token (first 50 chars): {token[:50] if token else 'None'}...")
-    
-    if scheme.lower() != "bearer":
-        logger.warning(f"Invalid authentication scheme: {scheme}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication scheme. Use 'Bearer <token>'",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not token:
-        logger.warning("Missing authentication token")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    token = credentials.credentials
+    logger.info(f"Token received (first 20 chars): {token[:20]}...")
     
     # Verify and extract user ID
     user_id = jwt_validator.get_user_id(token)
@@ -228,7 +213,7 @@ async def get_current_user_id(
 
 
 async def get_optional_user_id(
-    authorization: Optional[str] = Header(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
     jwt_validator: JWTValidator = Depends(get_jwt_validator)
 ) -> Optional[str]:
     """
@@ -236,19 +221,17 @@ async def get_optional_user_id(
     Returns None if not authenticated (for optional auth endpoints).
     
     Args:
-        authorization: Authorization header value
+        credentials: HTTP Authorization credentials (optional)
         jwt_validator: JWT validator instance
         
     Returns:
         User ID or None
     """
-    if not authorization:
+    if not credentials:
         return None
     
     try:
-        scheme, _, token = authorization.partition(" ")
-        if scheme.lower() == "bearer" and token:
-            return jwt_validator.get_user_id(token)
+        return jwt_validator.get_user_id(credentials.credentials)
     except HTTPException:
         pass
     

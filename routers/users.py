@@ -111,10 +111,13 @@ async def get_current_user_from_supabase(
             "user_metadata": user.user_metadata,
             "identities": [
                 {
-                    "provider": identity.get("provider"),
-                    "id": identity.get("id"),
-                    "created_at": identity.get("created_at"),
-                    "updated_at": identity.get("updated_at")
+                    "provider": getattr(identity, "provider", None),
+                    "id": getattr(identity, "id", None),
+                    "identity_id": getattr(identity, "identity_id", None),
+                    "user_id": getattr(identity, "user_id", None),
+                    "created_at": getattr(identity, "created_at", None),
+                    "updated_at": getattr(identity, "updated_at", None),
+                    "last_sign_in_at": getattr(identity, "last_sign_in_at", None)
                 }
                 for identity in (user.identities or [])
             ]

@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.security import HTTPBearer
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 from contextlib import asynccontextmanager
@@ -13,6 +14,9 @@ from contextlib import asynccontextmanager
 from config import get_settings
 from database import engine, Base
 from routers import users, plans, subscriptions, api_keys, webhooks
+
+# Security scheme for Swagger UI
+security = HTTPBearer()
 
 # Configure logging
 logging.basicConfig(
@@ -86,8 +90,46 @@ app = FastAPI(
     debug=settings.DEBUG,
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    swagger_ui_parameters={
+        "persistAuthorization": True
+    }
 )
+
+# Add security scheme to OpenAPI
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    from fastapi.openapi.utils import get_openapi
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    openapi_schema["components"]["securitySchemes"] = {
+        "HTTPBearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Enter your Supabase JWT access token"
+        }
+    }
+    
+    # Apply security globally to all endpoints that use authentication
+    for path in openapi_schema["paths"].values():
+        for operation in path.values():
+            if isinstance(operation, dict) and "security" not in operation:
+                # Check if endpoint has authentication (has parameters with dependencies)
+                if operation.get("tags") in [["Users"], ["Subscriptions"], ["API Keys"]]:
+                    operation["security"] = [{"HTTPBearer": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Configure CORS
 app.add_middleware(
