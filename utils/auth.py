@@ -4,11 +4,14 @@ Validates Supabase-issued JWT tokens.
 """
 from fastapi import HTTPException, status, Depends, Header
 from jose import JWTError, jwt
+from jose.backends.cryptography_backend import CryptographyECKey
 from typing import Optional
 from config import get_settings
 import httpx
 from functools import lru_cache
 import logging
+import json
+import base64
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -19,12 +22,52 @@ class JWTValidator:
     
     def __init__(self):
         self.jwt_secret = settings.SUPABASE_JWT_SECRET
-        # Supabase supports both HS256 (legacy) and ES256 (newer tokens)
-        self.algorithms = ["HS256", "ES256", "RS256"]
+        self.supabase_url = settings.SUPABASE_URL
+    
+    def _get_jwks_key(self, token: str) -> Optional[str]:
+        """
+        Fetch the public key from Supabase JWKS endpoint for ES256 tokens.
+        
+        Args:
+            token: JWT token
+            
+        Returns:
+            Public key in PEM format or None
+        """
+        try:
+            # Decode header to get kid (key id)
+            header = jwt.get_unverified_header(token)
+            kid = header.get('kid')
+            alg = header.get('alg')
+            
+            logger.info(f"Token algorithm: {alg}, kid: {kid}")
+            
+            # For ES256/RS256, fetch JWKS from Supabase
+            if alg in ['ES256', 'RS256']:
+                jwks_url = f"{self.supabase_url}/auth/v1/jwks"
+                logger.info(f"Fetching JWKS from: {jwks_url}")
+                
+                response = httpx.get(jwks_url, timeout=10.0)
+                response.raise_for_status()
+                jwks = response.json()
+                
+                # Find the matching key
+                for key in jwks.get('keys', []):
+                    if key.get('kid') == kid:
+                        logger.info(f"Found matching JWKS key for kid: {kid}")
+                        return key
+                
+                logger.warning(f"No matching key found in JWKS for kid: {kid}")
+            
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching JWKS: {str(e)}")
+            return None
     
     def verify_token(self, token: str) -> dict:
         """
         Verify and decode JWT token.
+        Supports both HS256 (using JWT secret) and ES256 (using JWKS).
         
         Args:
             token: JWT access token from Supabase
@@ -37,20 +80,45 @@ class JWTValidator:
         """
         try:
             logger.info(f"Attempting to verify token (first 20 chars): {token[:20]}...")
-            logger.info(f"Using JWT secret (first 10 chars): {self.jwt_secret[:10]}...")
             
-            # Try to decode with multiple algorithms (Supabase uses ES256 by default now)
+            # First, check the algorithm without verification
+            header = jwt.get_unverified_header(token)
+            alg = header.get('alg')
+            logger.info(f"Token uses algorithm: {alg}")
+            
+            # For ES256/RS256, use JWKS
+            if alg in ['ES256', 'RS256']:
+                jwks_key = self._get_jwks_key(token)
+                if jwks_key:
+                    # Decode using JWKS
+                    payload = jwt.decode(
+                        token,
+                        jwks_key,
+                        algorithms=[alg],
+                        options={
+                            "verify_aud": False,
+                            "verify_signature": True
+                        }
+                    )
+                    logger.info(f"Token verified successfully using JWKS. User ID: {payload.get('sub')}")
+                    return payload
+                else:
+                    raise JWTError("Unable to find matching key in JWKS")
+            
+            # For HS256, use JWT secret
+            logger.info(f"Using JWT secret (first 10 chars): {self.jwt_secret[:10]}...")
             payload = jwt.decode(
                 token,
                 self.jwt_secret,
-                algorithms=self.algorithms,
+                algorithms=["HS256"],
                 options={
-                    "verify_aud": False,  # Supabase tokens don't always have audience
+                    "verify_aud": False,
                     "verify_signature": True
                 }
             )
-            logger.info(f"Token verified successfully. User ID: {payload.get('sub')}")
+            logger.info(f"Token verified successfully using HS256. User ID: {payload.get('sub')}")
             return payload
+            
         except JWTError as e:
             logger.error(f"JWT verification failed: {str(e)}")
             logger.error(f"Token: {token[:50]}...")
