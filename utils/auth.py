@@ -19,7 +19,8 @@ class JWTValidator:
     
     def __init__(self):
         self.jwt_secret = settings.SUPABASE_JWT_SECRET
-        self.algorithm = "HS256"
+        # Supabase supports both HS256 (legacy) and ES256 (newer tokens)
+        self.algorithms = ["HS256", "ES256", "RS256"]
     
     def verify_token(self, token: str) -> dict:
         """
@@ -38,11 +39,15 @@ class JWTValidator:
             logger.info(f"Attempting to verify token (first 20 chars): {token[:20]}...")
             logger.info(f"Using JWT secret (first 10 chars): {self.jwt_secret[:10]}...")
             
+            # Try to decode with multiple algorithms (Supabase uses ES256 by default now)
             payload = jwt.decode(
                 token,
                 self.jwt_secret,
-                algorithms=[self.algorithm],
-                options={"verify_aud": False}  # Supabase tokens don't always have audience
+                algorithms=self.algorithms,
+                options={
+                    "verify_aud": False,  # Supabase tokens don't always have audience
+                    "verify_signature": True
+                }
             )
             logger.info(f"Token verified successfully. User ID: {payload.get('sub')}")
             return payload
