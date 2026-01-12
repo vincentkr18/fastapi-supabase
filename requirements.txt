@@ -1,0 +1,29 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
+
+# Supabase
+supabase
+gotrue
+
+# Authentication & Security
+python-jose[cryptography]
+passlib
+bcrypt
+cryptography
+
+# HTTP & Validation
+httpx
+email-validator
+
+# Development
+pytest
+pytest-asyncio
+black
