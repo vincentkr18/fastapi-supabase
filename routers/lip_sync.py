@@ -5,6 +5,7 @@ from pathlib import Path
 import uuid
 from datetime import datetime
 from loguru import logger
+import os
 
 from database import get_db
 from models import GenerationJob, Video
@@ -12,8 +13,16 @@ from schemas import JobResponse, AspectRatio, VideoModel, JobStatus
 
 router = APIRouter(prefix="/api/v1/lip-sync", tags=["Lip Sync"])
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+# Use /tmp for serverless environments
+if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    UPLOAD_DIR = Path("/tmp/uploads")
+else:
+    UPLOAD_DIR = Path("uploads")
+
+try:
+    UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
+except OSError:
+    pass
 
 MAX_AUDIO_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".ogg", ".flac"}

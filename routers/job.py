@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
+import os
 
 from database import get_db
 from models import GenerationJob
@@ -9,8 +10,17 @@ from schemas import JobStatusResponse, JobStatus
 
 router = APIRouter(prefix="/api/v1/jobs", tags=["Jobs"])
 
-OUTPUT_DIR = Path("outputs")
-OUTPUT_DIR.mkdir(exist_ok=True)
+# Use /tmp for serverless environments (Vercel, AWS Lambda)
+if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    OUTPUT_DIR = Path("/tmp/outputs")
+else:
+    OUTPUT_DIR = Path("outputs")
+
+# Only create directory if filesystem is writable
+try:
+    OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
+except OSError:
+    pass  # Read-only filesystem, will be created at request time if needed
 
 
 @router.get("/{job_id}/status", response_model=JobStatusResponse)

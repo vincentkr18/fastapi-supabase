@@ -4,6 +4,7 @@ from typing import Optional
 from pathlib import Path
 import uuid
 from loguru import logger
+import os
 
 from database import get_db
 from models import GenerationJob, Video
@@ -12,8 +13,16 @@ import random
 
 router = APIRouter(prefix="/api/v1/sora-2", tags=["Sora 2"])
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+# Use /tmp for serverless environments
+if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    UPLOAD_DIR = Path("/tmp/uploads")
+else:
+    UPLOAD_DIR = Path("uploads")
+
+try:
+    UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
+except OSError:
+    pass
 
 MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}

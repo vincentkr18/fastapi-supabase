@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Annotated
 from uuid import UUID
+from loguru import logger
 
 from database import get_db
 from models import Video, Tag
@@ -32,6 +33,14 @@ def list_videos(
     tags: str | None = None,
     db: Session = Depends(get_db)
 ):
+    logger.info("=" * 80)
+    logger.info("TEMPLATES LISTING REQUEST RECEIVED")
+    logger.info(f"Page: {page}")
+    logger.info(f"Limit: {limit}")
+    logger.info(f"Search: {search}")
+    logger.info(f"Tags: {tags}")
+    logger.info("=" * 80)
+    
     query = db.query(Video)
 
     if search:
