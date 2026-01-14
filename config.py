@@ -35,12 +35,14 @@ class Settings(BaseSettings):
     API_KEY_SECRET_KEY: str  # For hashing API keys
     
     # CORS
-    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: Union[str, List[str]] = "*"
     
     @field_validator('CORS_ORIGINS', mode='before')
     @classmethod
     def parse_cors_origins(cls, v):
         """Parse comma-separated CORS origins into a list."""
+        if v == "*":
+            return ["*"]
         if isinstance(v, str):
             # Split by comma and strip whitespace
             return [origin.strip() for origin in v.split(',') if origin.strip()]
