@@ -27,3 +27,4 @@ email-validator
 pytest
 pytest-asyncio
 black
+loguru

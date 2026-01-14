@@ -48,6 +48,7 @@ logs/
 # Database
 *.db
 *.sqlite3
+upload_video_directory.py
 
 # OS
 .DS_Store

@@ -10,7 +10,8 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
 import uuid
-
+# models.py
+from sqlalchemy import Column, Integer, String, Table, ForeignKey
 
 class Profile(Base):
     """
@@ -133,3 +134,73 @@ class BillingEvent(Base):
     
     # Relationships
     user = relationship("Profile", back_populates="billing_events")
+
+
+
+video_tags = Table(
+    "video_tags",
+    Base.metadata,
+    Column("video_id", ForeignKey("videos.id"), primary_key=True),
+    Column("tag_id", ForeignKey("tags.id"), primary_key=True),
+)
+
+class Video(Base):
+    __tablename__ = "videos"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(255), nullable=False)
+    video_url = Column(String, nullable=False)
+    thumbnail_url = Column(String, nullable=False)
+    preview_url = Column(String, nullable=False)
+
+    tags = relationship("Tag", secondary=video_tags, back_populates="videos")
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False)
+
+    videos = relationship("Video", secondary=video_tags, back_populates="tags")
+
+
+
+
+class GenerationJob(Base):
+    __tablename__ = "generation_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(String(36), unique=True, nullable=False, index=True)
+    model_type = Column(String(50), nullable=False)  # lip_sync, sora_2, kling, veo_3
+    status = Column(String(20), nullable=False, default="pending")  # pending, processing, completed, failed
+    progress = Column(Integer, default=0)
+    
+    # Input parameters
+    aspect_ratio = Column(String(10), nullable=False)
+    prompt = Column(Text, nullable=True)
+    video_template_id = Column(Integer, ForeignKey('videos.id'), nullable=True)
+    
+    # File paths
+    audio_file_path = Column(String, nullable=True)
+    product_image_path = Column(String, nullable=True)
+    output_video_path = Column(String, nullable=True)
+    
+    # Text-to-speech parameters
+    text_input = Column(Text, nullable=True)
+    voice_id = Column(String(100), nullable=True)  # ElevenLabs voice ID
+    
+    # Additional metadata
+    character_description = Column(Text, nullable=True)
+    environment_description = Column(Text, nullable=True)
+    gestures = Column(Text, nullable=True)
+    dialogue = Column(Text, nullable=True)
+    voice_tone = Column(String(100), nullable=True)
+    
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship
+    video_template = relationship("Video", foreign_keys=[video_template_id])
+    #user = relationship("Profile", back_populates="generation_jobs")

@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 
 from config import get_settings
 from database import engine, Base
-from routers import users, plans, subscriptions, api_keys, webhooks
+from routers import users, plans, subscriptions, api_keys, webhooks, job, kling, lip_sync, sora2, templates, veo
 
 # Security scheme for Swagger UI
 security = HTTPBearer()
@@ -212,6 +212,12 @@ app.include_router(plans.router)
 app.include_router(subscriptions.router)
 app.include_router(api_keys.router)
 app.include_router(webhooks.router)
+app.include_router(templates.router)
+app.include_router(job.router)
+app.include_router(kling.router)
+app.include_router(sora2.router)
+app.include_router(veo.router)
+app.include_router(lip_sync.router)
 
 
 if __name__ == "__main__":

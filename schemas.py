@@ -177,3 +177,98 @@ class ErrorResponse(BaseModel):
     error: str
     detail: Optional[str] = None
     status_code: int
+
+# schemas.py
+
+from pydantic import BaseModel
+from typing import List
+
+class TagOut(BaseModel):
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class VideoOut(BaseModel):
+    id: int
+    title: str
+    video_url: str
+    thumbnail_url: str
+    preview_url: str
+    tags: List[TagOut]
+
+    model_config = ConfigDict(from_attributes=True)
+    
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        """Override to update URL transformations to 1080x1920"""
+        instance = super().model_validate(obj, **kwargs)
+        
+        # Update thumbnail URL transformations
+        if instance.thumbnail_url:
+            instance.thumbnail_url = instance.thumbnail_url.replace(
+                'w_400,h_250,c_fill', 'w_1080,h_1920,c_fill'
+            )
+        
+        # Update preview URL transformations
+        if instance.preview_url:
+            # Replace old transformation or add new one
+            if 'so_0,du_4/' in instance.preview_url:
+                instance.preview_url = instance.preview_url.replace(
+                    'so_0,du_4/', 'so_0,du_4,w_1080,h_1920,c_fill/'
+                )
+        
+        return instance
+
+
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+from enum import Enum
+
+
+class AspectRatio(str, Enum):
+    SQUARE = "1:1"
+    PORTRAIT = "9:16"
+    LANDSCAPE = "16:9"
+    WIDESCREEN = "21:9"
+
+
+class VideoModel(str, Enum):
+    LIP_SYNC = "lip_sync"
+    SORA_2 = "sora_2"
+    KLING = "kling"
+    VEO_3 = "veo_3"
+
+
+class JobStatus(str, Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class JobResponse(BaseModel):
+    job_id: str
+    status: str
+    model: str
+    progress: int
+    created_at: datetime
+    message: str = "Job submitted successfully"
+    video_generated_path: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    progress: int
+    video_url: Optional[str] = None
+    error: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str
     SUPABASE_JWT_SECRET: str
+    SUPABASE_TOKEN: str = ""
+    SUPABASE_ORG_ID: str = ""
     
     # Database (Supabase PostgreSQL)
     DATABASE_URL: str

@@ -9,9 +9,16 @@ from alembic import context
 # Import your models' Base
 from database import Base
 from models import *  # Import all models
+from config import get_settings
 
 # this is the Alembic Config object
 config = context.config
+
+# Get DATABASE_URL from environment
+settings = get_settings()
+# Escape % characters for ConfigParser
+escaped_url = settings.DATABASE_URL.replace('%', '%%')
+config.set_main_option("sqlalchemy.url", escaped_url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
