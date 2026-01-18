@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     # API Key Security
     API_KEY_SECRET_KEY: str  # For hashing API keys
     
+    # AWS S3 Configuration
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-1"
+    S3_BUCKET_NAME: str = ""
+    S3_BUCKET_URL: str = ""  # e.g., https://your-bucket.s3.amazonaws.com
+    
     # CORS
     CORS_ORIGINS: Union[str, List[str]] = "*"
     

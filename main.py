@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 
 from config import get_settings
 from database import engine, Base
-from routers import users, plans, subscriptions, api_keys, webhooks, job, kling, lip_sync, sora2, templates, veo
+from routers import users, plans, subscriptions, api_keys, webhooks, job, kling, lip_sync, sora2, templates, veo, media, waitlist
 
 # Security scheme for Swagger UI
 security = HTTPBearer()
@@ -134,7 +134,7 @@ app.openapi = custom_openapi
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"], #settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -213,11 +213,14 @@ app.include_router(subscriptions.router)
 app.include_router(api_keys.router)
 app.include_router(webhooks.router)
 app.include_router(templates.router)
+app.include_router(media.router)
 app.include_router(job.router)
 app.include_router(kling.router)
 app.include_router(sora2.router)
 app.include_router(veo.router)
 app.include_router(lip_sync.router)
+
+app.include_router(waitlist.router)
 
 
 if __name__ == "__main__":

@@ -272,3 +272,41 @@ class JobStatusResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ============ User Media Schemas ============
+
+class MediaType(str, Enum):
+    """Enum for media types."""
+    AUDIO = "audio"
+    IMAGE = "image"
+
+
+class UserMediaUploadResponse(BaseModel):
+    """Response schema for media upload."""
+    id: UUID
+    media_type: str
+    file_name: str
+    original_file_name: str
+    s3_url: str
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserMediaListResponse(BaseModel):
+    """Response schema for listing user media."""
+    id: UUID
+    media_type: str
+    file_name: str
+    original_file_name: str
+    s3_url: str
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    media_metadata: Optional[Dict[str, Any]] = {}
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)

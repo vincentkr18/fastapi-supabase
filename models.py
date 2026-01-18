@@ -9,6 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
+from waitlist_model import Waitlist
 import uuid
 # models.py
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
@@ -204,3 +205,26 @@ class GenerationJob(Base):
     # Relationship
     video_template = relationship("Video", foreign_keys=[video_template_id])
     #user = relationship("Profile", back_populates="generation_jobs")
+
+
+class UserMedia(Base):
+    """
+    User uploaded media files (audio and pictures) stored in S3.
+    """
+    __tablename__ = "user_media"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, index=True)
+    media_type = Column(String(20), nullable=False)  # audio, image
+    file_name = Column(String(255), nullable=False)
+    original_file_name = Column(String(255), nullable=False)
+    s3_key = Column(String(500), nullable=False)  # S3 object key
+    s3_url = Column(String(1000), nullable=False)  # Full S3 URL
+    file_size = Column(Integer, nullable=True)  # Size in bytes
+    mime_type = Column(String(100), nullable=True)  # e.g., audio/mpeg, image/jpeg
+    media_metadata = Column(JSON, nullable=True, default={})  # Additional metadata (duration, dimensions, etc.)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("Profile")

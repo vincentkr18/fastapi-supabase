@@ -10,7 +10,7 @@ from uuid import UUID
 from database import get_db
 from models import Profile
 from schemas import ProfileResponse, ProfileUpdate, MessageResponse
-from utils.auth import get_current_user_id
+from utils.auth import get_current_user_id, get_current_user
 from utils.supabase_client import get_supabase_client
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -75,58 +75,26 @@ async def update_current_user_profile(
 
 @router.get("/me/auth", response_model=dict)
 async def get_current_user_from_supabase(
-    current_user_id: Annotated[str, Depends(get_current_user_id)]
+    current_user: Annotated[dict, Depends(get_current_user)]
 ):
     """
-    Get current authenticated user's details directly from Supabase Auth.
+    Get current authenticated user's details from JWT token.
     
-    Returns complete user data from Supabase authentication system.
+    Returns user data decoded from the JWT token (fast, no external API calls).
     """
-    try:
-        supabase = get_supabase_client()
-        
-        # Query user from Supabase Auth
-        response = supabase.auth.admin.get_user_by_id(current_user_id)
-        
-        if not response or not response.user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found in Supabase Auth"
-            )
-        
-        user = response.user
-        
-        # Return user details
-        return {
-            "id": user.id,
-            "email": user.email,
-            "phone": user.phone,
-            "email_confirmed_at": user.email_confirmed_at,
-            "phone_confirmed_at": user.phone_confirmed_at,
-            "created_at": user.created_at,
-            "updated_at": user.updated_at,
-            "last_sign_in_at": user.last_sign_in_at,
-            "role": user.role,
-            "app_metadata": user.app_metadata,
-            "user_metadata": user.user_metadata,
-            "identities": [
-                {
-                    "provider": getattr(identity, "provider", None),
-                    "id": getattr(identity, "id", None),
-                    "identity_id": getattr(identity, "identity_id", None),
-                    "user_id": getattr(identity, "user_id", None),
-                    "created_at": getattr(identity, "created_at", None),
-                    "updated_at": getattr(identity, "updated_at", None),
-                    "last_sign_in_at": getattr(identity, "last_sign_in_at", None)
-                }
-                for identity in (user.identities or [])
-            ]
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch user from Supabase: {str(e)}"
-        )
+    # JWT token already contains all the user data we need
+    # No need to make external API call to Supabase
+    return {
+        "id": current_user.get("sub"),
+        "email": current_user.get("email"),
+        "phone": current_user.get("phone"),
+        "email_confirmed_at": current_user.get("email_confirmed_at"),
+        "phone_confirmed_at": current_user.get("phone_confirmed_at"),
+        "role": current_user.get("role"),
+        "app_metadata": current_user.get("app_metadata", {}),
+        "user_metadata": current_user.get("user_metadata", {}),
+        # Additional token claims
+        "aud": current_user.get("aud"),
+        "iat": current_user.get("iat"),
+        "exp": current_user.get("exp")
+    }

@@ -29,3 +29,6 @@ pytest
 pytest-asyncio
 black
 loguru
+
+# AWS S3
+boto3

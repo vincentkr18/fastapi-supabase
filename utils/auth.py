@@ -184,6 +184,34 @@ def get_jwt_validator() -> JWTValidator:
     return JWTValidator()
 
 
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    jwt_validator: JWTValidator = Depends(get_jwt_validator)
+) -> dict:
+    """
+    FastAPI dependency to get current authenticated user's full JWT payload.
+    
+    Extracts and validates JWT from Authorization header, returning all claims.
+    
+    Args:
+        credentials: HTTP Authorization credentials from security scheme
+        jwt_validator: JWT validator instance
+        
+    Returns:
+        Full JWT payload as dict containing user data and claims
+        
+    Raises:
+        HTTPException: If authorization header is missing or invalid
+    """
+    token = credentials.credentials
+    logger.info(f"Token received (first 20 chars): {token[:20]}...")
+    
+    # Verify and extract full payload
+    payload = jwt_validator.verify_token(token)
+    logger.info(f"Authenticated user: {payload.get('sub')}")
+    return payload
+
+
 async def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     jwt_validator: JWTValidator = Depends(get_jwt_validator)
