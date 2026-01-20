@@ -2,18 +2,18 @@ import httpx
 import hmac
 import hashlib
 from typing import Dict, Any, Optional
-from config import settings
-from schemas import DodoPaymentRequest, DodoPaymentResponse
+from config import get_settings
+from payment_schemas import DodoPaymentRequest, DodoPaymentResponse
 from decimal import Decimal
 import logging
 
 logger = logging.getLogger(__name__)
 
-
 class DodoPaymentService:
     """Service for handling Dodo Payments integration"""
     
     def __init__(self):
+        settings = get_settings()
         self.api_key = settings.dodo_api_key
         self.api_secret = settings.dodo_api_secret
         self.base_url = settings.dodo_base_url
@@ -46,8 +46,8 @@ class DodoPaymentService:
                     "id": user_id
                 },
                 "metadata": metadata or {},
-                "return_url": f"{settings.webhook_base_url}/payment/success",
-                "cancel_url": f"{settings.webhook_base_url}/payment/cancel"
+                "return_url": f"{Settings.webhook_base_url}/payment/success",
+                "cancel_url": f"{Settings.webhook_base_url}/payment/cancel"
             }
             
             async with httpx.AsyncClient() as client:

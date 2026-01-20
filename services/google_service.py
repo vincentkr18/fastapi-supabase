@@ -1,7 +1,7 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from typing import Dict, Any, Optional
-from config import settings
+from config import get_settings
 import logging
 import json
 
@@ -12,6 +12,7 @@ class GooglePlayService:
     """Service for handling Google Play In-App Purchase verification"""
     
     def __init__(self):
+        settings = get_settings()
         self.package_name = settings.google_package_name
         self.service_account_file = settings.google_service_account_json
         self.api_version = settings.google_publisher_api_version

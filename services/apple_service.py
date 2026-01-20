@@ -1,6 +1,6 @@
 import httpx
 from typing import Dict, Any, Optional
-from config import settings
+from config import get_settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,9 +10,10 @@ class AppleIAPService:
     """Service for handling Apple In-App Purchase verification"""
     
     def __init__(self):
+        settings = get_settings()
         self.shared_secret = settings.apple_shared_secret
         self.bundle_id = settings.apple_bundle_id
-        self.verify_url = settings.apple_verify_url
+        self.verify_url = getattr(settings, 'apple_verify_url', None)
     
     async def verify_receipt(self, receipt_data: str) -> Dict[str, Any]:
         """

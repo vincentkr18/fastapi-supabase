@@ -48,11 +48,11 @@ class Settings(BaseSettings):
     
 
     # Dodo Payments
-    dodo_api_key: str = ""
-    dodo_api_secret: str = ""
-    dodo_webhook_secret: str = ""
-    dodo_base_url: str = "https://api.dodopayments.com/v1"
-    dodo_mode: str = "test"
+    dodo_api_key: str =  os.getenv("DODO_API_KEY", "")
+    dodo_api_secret: str = os.getenv("DODO_API_SECRET", "")
+    dodo_webhook_secret: str = os.getenv("DODO_WEBHOOK_SECRET", "")
+    dodo_base_url: str = os.getenv("DODO_BASE_URL", "https://api.dodopayments.com/v1")
+    dodo_mode: str = os.getenv("DODO_MODE", "test")
     
     # Apple IAP
     apple_shared_secret: str = ""

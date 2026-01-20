@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from datetime import datetime, timedelta
 
-from schemas import (
+from payment_schemas import (
     PaymentResponse,
     SubscriptionResponse,
     DodoPaymentRequest,
@@ -20,7 +20,7 @@ from services.apple_service import apple_service
 from services.google_service import google_service
 from services.db_service import db_service
 from database import get_db
-from auth import get_current_user  # Your auth dependency
+from utils.auth import get_current_user  # Your auth dependency
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
