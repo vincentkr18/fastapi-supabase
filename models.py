@@ -25,31 +25,39 @@ class Profile(Base):
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     display_name = Column(String(150), nullable=True)
+    email = Column(String(255), nullable=True, index=True)
     avatar_url = Column(String(500), nullable=True)
-    extra_meta = Column(JSON, nullable=True, default={})
+    extra_meta = Column(JSON, nullable=True, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
-    subscriptions = relationship("Subscription", back_populates="user")
-    api_keys = relationship("APIKey", back_populates="user")
-    billing_events = relationship("BillingEvent", back_populates="user")
+    subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
 
 
 class Plan(Base):
     """
-    SaaS pricing plans.
+    Pricing plans - supports multiple providers and pricing models.
     """
     __tablename__ = "plans"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), unique=True, nullable=False, index=True)
     description = Column(Text, nullable=True)
-    lemon_squeezy_product_id = Column(String(255), nullable=True)
-    price_monthly = Column(Numeric(10, 2), nullable=True)
-    price_annually = Column(Numeric(10, 2), nullable=True)
-    features = Column(JSON, nullable=True, default={})
-    active = Column(Boolean, default=True, nullable=False)
+    
+    # Pricing - store all variants in JSON
+    # e.g., {"monthly_usd": 9.99, "annual_usd": 99, "monthly_inr": 799}
+    pricing = Column(JSON, nullable=False, default=dict)
+    
+    # Features available in this plan
+    features = Column(JSON, nullable=True, default=dict)
+    
+    # Provider-specific IDs stored in JSON
+    # e.g., {"dodo": "prod_123", "apple": "com.app.premium", "google": "premium_monthly"}
+    provider_ids = Column(JSON, nullable=True, default=dict)
+    
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -59,82 +67,137 @@ class Plan(Base):
 
 class Subscription(Base):
     """
-    User subscriptions to plans.
+    User subscriptions - consolidated for all providers.
     """
     __tablename__ = "subscriptions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, index=True)
-    plan_id = Column(UUID(as_uuid=True), ForeignKey("plans.id"), nullable=False, index=True)
-    status = Column(String(50), nullable=False, default="active")  # active, canceled, expired, past_due
-    start_date = Column(DateTime, default=datetime.utcnow, nullable=False)
-    end_date = Column(DateTime, nullable=True)
-    lemon_squeezy_subscription_id = Column(String(255), nullable=True, unique=True, index=True)
-    price_id = Column(String(255), nullable=True)
-    auto_renew = Column(Boolean, default=True, nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("plans.id", ondelete="RESTRICT"), nullable=False, index=True)
+    
+    # Provider info
+    # Values: "dodo", "apple", "google"
+    provider = Column(String(20), nullable=False, index=True)
+    provider_subscription_id = Column(String(255), unique=True, index=True, nullable=False)
+    
+    # Status
+    # Values: "active", "canceled", "expired", "past_due", "trial"
+    status = Column(String(50), nullable=False, default="active", index=True)
+    
+    # Dates
+    current_period_start = Column(DateTime, nullable=False)
+    current_period_end = Column(DateTime, nullable=False)
+    cancel_at_period_end = Column(Boolean, default=False, nullable=False)
     canceled_at = Column(DateTime, nullable=True)
+    trial_end = Column(DateTime, nullable=True)
+    
+    # Store event history as JSON instead of separate table
+    # e.g., [{"event": "created", "date": "2024-01-01T00:00:00", "metadata": {}}]
+    event_log = Column(JSON, nullable=True, default=list)
+    
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
     user = relationship("Profile", back_populates="subscriptions")
     plan = relationship("Plan", back_populates="subscriptions")
-    history = relationship("SubscriptionHistory", back_populates="subscription")
+    payments = relationship("Payment", back_populates="subscription", cascade="all, delete-orphan")
 
 
-class SubscriptionHistory(Base):
+class Payment(Base):
     """
-    Audit log for subscription changes.
+    Payment transactions - supports multiple payment providers.
     """
-    __tablename__ = "subscription_history"
+    __tablename__ = "payments"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id"), nullable=False, index=True)
-    event = Column(String(100), nullable=False)  # created, renewed, canceled, upgraded, downgraded
-    amount = Column(Numeric(10, 2), nullable=True)
-    event_date = Column(DateTime, default=datetime.utcnow, nullable=False)
-    event_metadata = Column(JSON, nullable=True, default={})
+    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    # Provider
+    # Values: "dodo", "apple", "google"
+    provider = Column(String(20), nullable=False, index=True)
+    provider_payment_id = Column(String(255), unique=True, index=True, nullable=False)
+    
+    # Amount
+    amount = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String(3), default="USD", nullable=False)
+    
+    # Status
+    # Values: "pending", "completed", "failed", "refunded", "partially_refunded"
+    status = Column(String(50), nullable=False, default="pending", index=True)
+    
+    # Refund info (instead of separate table)
+    refund_amount = Column(Numeric(10, 2), nullable=True)
+    refund_reason = Column(Text, nullable=True)
+    refunded_at = Column(DateTime, nullable=True)
+    
+    # Extra metadata - store everything else here
+    # payment_method, description, proration_details, provider-specific data, etc.
+    extra_metadata = Column(JSON, nullable=True, default=dict)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
     
     # Relationships
-    subscription = relationship("Subscription", back_populates="history")
+    user = relationship("Profile", back_populates="payments")
+    subscription = relationship("Subscription", back_populates="payments")
 
 
 class APIKey(Base):
     """
     API keys for users with API-enabled plans.
+    Optional - only needed if you're offering API access.
     """
     __tablename__ = "api_keys"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Security
     key_hash = Column(String(255), nullable=False, unique=True, index=True)  # Hashed key
-    key_prefix = Column(String(20), nullable=False)  # First few chars for display
+    key_prefix = Column(String(20), nullable=False)  # First few chars for display (e.g., "sk_test_abc...")
+    
+    # Metadata
     name = Column(String(100), nullable=True)  # User-defined key name
+    
+    # Status
+    revoked = Column(Boolean, default=False, nullable=False, index=True)
+    
+    # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     expires_at = Column(DateTime, nullable=True)
-    revoked = Column(Boolean, default=False, nullable=False)
     last_used = Column(DateTime, nullable=True)
     
     # Relationships
-    user = relationship("Profile", back_populates="api_keys")
+    user = relationship("Profile", backref="api_keys")
 
 
-class BillingEvent(Base):
+class WebhookEvent(Base):
     """
-    Webhook events from billing provider (Lemon Squeezy).
+    Webhook events - provider agnostic.
+    Stores all webhook events from all providers for debugging and audit.
     """
-    __tablename__ = "billing_events"
+    __tablename__ = "webhook_events"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True, index=True)
+    
+    # Provider info
+    # Values: "dodo", "apple", "google"
+    provider = Column(String(20), nullable=False, index=True)
+    provider_event_id = Column(String(255), unique=True, index=True, nullable=True)
     event_type = Column(String(100), nullable=False, index=True)
+    
+    # Event data
     payload = Column(JSON, nullable=False)
-    received_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    processed = Column(Boolean, default=False, nullable=False)
+    signature = Column(String(500), nullable=True)  # For verification
+    
+    # Processing status
+    processed = Column(Boolean, default=False, nullable=False, index=True)
+    processed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
     
-    # Relationships
-    user = relationship("Profile", back_populates="billing_events")
+    received_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
 

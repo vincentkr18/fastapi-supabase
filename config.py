@@ -46,6 +46,32 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "ugc-audio-images-store-s3")
     S3_BUCKET_URL: str = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/"  # e.g., https://your-bucket.s3.amazonaws.com
     
+
+    # Dodo Payments
+    dodo_api_key: str = ""
+    dodo_api_secret: str = ""
+    dodo_webhook_secret: str = ""
+    dodo_base_url: str = "https://api.dodopayments.com/v1"
+    dodo_mode: str = "test"
+    
+    # Apple IAP
+    apple_shared_secret: str = ""
+    apple_bundle_id: str = ""
+    apple_verify_receipt_url_sandbox: str = "https://sandbox.itunes.apple.com/verifyReceipt"
+    apple_verify_receipt_url_production: str = "https://buy.itunes.apple.com/verifyReceipt"
+    apple_mode: str = "sandbox"
+    
+    # Google Play
+    google_service_account_json: str = ""
+    google_package_name: str = ""
+    google_publisher_api_version: str = "v3"
+    
+    # Webhooks
+    webhook_base_url: str = ""
+    dodo_webhook_path: str = "/api/webhooks/dodo"
+    apple_webhook_path: str = "/api/webhooks/apple"
+    google_webhook_path: str = "/api/webhooks/google"
+
     # CORS
     CORS_ORIGINS: Union[str, List[str]] = "*"
     
@@ -65,7 +91,8 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
-        case_sensitive = True
+        case_sensitive = False
+        extra = "ignore"
 
 
 @lru_cache()
