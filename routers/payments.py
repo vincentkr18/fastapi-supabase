@@ -49,7 +49,7 @@ async def create_dodo_payment(
         
         # Create payment in Dodo
         payment_data = await dodo_service.create_payment(
-            user_id=str(current_user.id),
+            user_id=str(current_user["id"]),
             amount=amount,
             currency="USD",
             plan_id=str(request.plan_id),
@@ -59,7 +59,7 @@ async def create_dodo_payment(
         # Create payment record in DB
         db_service.create_payment(
             db=db,
-            user_id=current_user.id,
+            user_id=current_user["id"],
             provider="dodo",
             provider_payment_id=payment_data["id"],
             amount=amount,
@@ -171,7 +171,7 @@ async def verify_apple_receipt(
             
             subscription = db_service.create_subscription(
                 db=db,
-                user_id=current_user.id,
+                user_id=current_user["id"],
                 plan_id=plan.id,
                 provider="apple",
                 provider_subscription_id=subscription_info["original_transaction_id"],
@@ -183,7 +183,7 @@ async def verify_apple_receipt(
             # Create payment record
             db_service.create_payment(
                 db=db,
-                user_id=current_user.id,
+                user_id=current_user["id"],
                 provider="apple",
                 provider_payment_id=subscription_info["transaction_id"],
                 amount=0,  # Apple doesn't provide amount in receipt
@@ -274,7 +274,7 @@ async def verify_google_purchase(
                 
                 subscription = db_service.create_subscription(
                     db=db,
-                    user_id=current_user.id,
+                    user_id=current_user["id"],
                     plan_id=plan.id,
                     provider="google",
                     provider_subscription_id=request.purchase_token,
@@ -288,7 +288,7 @@ async def verify_google_purchase(
                 
                 db_service.create_payment(
                     db=db,
-                    user_id=current_user.id,
+                    user_id=current_user["id"],
                     provider="google",
                     provider_payment_id=request.purchase_token,
                     amount=amount,
@@ -322,7 +322,7 @@ async def get_user_subscriptions(
 ):
     """Get all subscriptions for current user"""
     subscriptions = db_service.get_user_subscriptions(
-        db, current_user.id, active_only
+        db, current_user["id"], active_only
     )
     return subscriptions
 
@@ -339,7 +339,7 @@ async def get_subscription(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    if subscription.user_id != current_user.id:
+    if subscription.user_id != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     return subscription
@@ -358,7 +358,7 @@ async def cancel_subscription(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    if subscription.user_id != current_user.id:
+    if subscription.user_id != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     try:
