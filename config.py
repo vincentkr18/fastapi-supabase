@@ -6,6 +6,11 @@ from pydantic_settings import BaseSettings
 from pydantic import field_validator
 from functools import lru_cache
 from typing import List, Union
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -35,11 +40,11 @@ class Settings(BaseSettings):
     API_KEY_SECRET_KEY: str  # For hashing API keys
     
     # AWS S3 Configuration
-    AWS_ACCESS_KEY_ID: str = ""
-    AWS_SECRET_ACCESS_KEY: str = ""
-    AWS_REGION: str = "us-east-1"
-    S3_BUCKET_NAME: str = ""
-    S3_BUCKET_URL: str = ""  # e.g., https://your-bucket.s3.amazonaws.com
+    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    AWS_REGION: str = os.getenv("AWS_REGION", "eu-north-1")
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "ugc-audio-images-store-s3")
+    S3_BUCKET_URL: str = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/"  # e.g., https://your-bucket.s3.amazonaws.com
     
     # CORS
     CORS_ORIGINS: Union[str, List[str]] = "*"
