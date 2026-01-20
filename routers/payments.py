@@ -21,7 +21,7 @@ from services.google_service import google_service
 from services.db_service import db_service
 from database import get_db
 from utils.auth import get_current_user  # Your auth dependency
-
+from models import Plan
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
 
