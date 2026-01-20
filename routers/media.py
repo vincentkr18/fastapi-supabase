@@ -80,7 +80,7 @@ def validate_file(file: UploadFile, media_type: str) -> None:
 @router.post("/upload/audio", response_model=UserMediaUploadResponse)
 async def upload_audio(
     file: UploadFile = File(...),
-    user: Profile = Depends(get_current_user),
+    #user: Profile = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -105,7 +105,7 @@ async def upload_audio(
     # Generate S3 key
     file_ext = Path(file.filename).suffix.lower()
     s3_key = s3_client.generate_s3_key(
-        user_id=str(user.id),
+        user_id=str('testing-user'), #user.id
         media_type="audio",
         file_extension=file_ext
     )
@@ -119,7 +119,7 @@ async def upload_audio(
         s3_key=s3_key,
         content_type=file.content_type,
         media_metadata={
-            'user_id': str(user.id),
+            'user_id': str('testing-user'), #user.id
             'original_filename': file.filename
         }
     )
@@ -130,7 +130,7 @@ async def upload_audio(
     
     # Create database entry
     media_entry = UserMedia(
-        user_id=user.id,
+        user_id='testing-user', #user.id
         media_type=MediaType.AUDIO,
         file_name=Path(s3_key).name,
         original_file_name=file.filename,
@@ -145,7 +145,7 @@ async def upload_audio(
     db.commit()
     db.refresh(media_entry)
     
-    logger.info(f"User {user.id} uploaded audio file: {file.filename} -> {s3_key}")
+    logger.info(f"User {'testing-user'} uploaded audio file: {file.filename} -> {s3_key}")
     
     return media_entry
 
@@ -153,7 +153,7 @@ async def upload_audio(
 @router.post("/upload/image", response_model=UserMediaUploadResponse)
 async def upload_image(
     file: UploadFile = File(...),
-    user: Profile = Depends(get_current_user),
+    #user: Profile = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -178,7 +178,7 @@ async def upload_image(
     # Generate S3 key
     file_ext = Path(file.filename).suffix.lower()
     s3_key = s3_client.generate_s3_key(
-        user_id=str(user.id),
+        user_id=str('testing-user'), #user.id
         media_type="image",
         file_extension=file_ext
     )
@@ -192,7 +192,7 @@ async def upload_image(
         s3_key=s3_key,
         content_type=file.content_type,
         media_metadata={
-            'user_id': str(user.id),
+            'user_id': str('testing-user'), #user.id
             'original_filename': file.filename
         }
     )
@@ -203,7 +203,7 @@ async def upload_image(
     
     # Create database entry
     media_entry = UserMedia(
-        user_id=user.id,
+        user_id='testing-user', #user.id
         media_type=MediaType.IMAGE,
         file_name=Path(s3_key).name,
         original_file_name=file.filename,
@@ -218,7 +218,7 @@ async def upload_image(
     db.commit()
     db.refresh(media_entry)
     
-    logger.info(f"User {user.id} uploaded image file: {file.filename} -> {s3_key}")
+    logger.info(f"User {'testing-user'} uploaded image file: {file.filename} -> {s3_key}")
     
     return media_entry
 
@@ -228,7 +228,7 @@ async def list_user_media(
     media_type: Optional[str] = Query(None, description="Filter by media type (audio or image)"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of items to return"),
     offset: int = Query(0, ge=0, description="Number of items to skip"),
-    user: Profile = Depends(get_current_user),
+    #user: Profile = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -239,7 +239,7 @@ async def list_user_media(
     - limit: Maximum items per page (default: 50, max: 100)
     - offset: Pagination offset (default: 0)
     """
-    query = db.query(UserMedia).filter(UserMedia.user_id == user.id)
+    query = db.query(UserMedia).filter(UserMedia.user_id == 'testing-user')
     
     # Apply media type filter if provided
     if media_type:
