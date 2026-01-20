@@ -77,7 +77,7 @@ def validate_file(file: UploadFile, media_type: str) -> None:
         raise HTTPException(status_code=400, detail="Invalid media type")
 
 
-@router.post("/upload/audio", response_model=UserMediaUploadResponse)
+@router.post("/upload/audio") #, response_model=UserMediaUploadResponse)
 async def upload_audio(
     file: UploadFile = File(...),
     #user: Profile = Depends(get_current_user),
@@ -103,9 +103,11 @@ async def upload_audio(
         )
     
     # Generate S3 key
+    import uuid
+    test_user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
     file_ext = Path(file.filename).suffix.lower()
     s3_key = s3_client.generate_s3_key(
-        user_id=str('testing-user'), #user.id
+        user_id=str(test_user_id), #user.id
         media_type="audio",
         file_extension=file_ext
     )
@@ -118,8 +120,8 @@ async def upload_audio(
         file_obj=file_obj,
         s3_key=s3_key,
         content_type=file.content_type,
-        media_metadata={
-            'user_id': str('testing-user'), #user.id
+        metadata={
+            'user_id': str(test_user_id), #user.id
             'original_filename': file.filename
         }
     )
@@ -129,28 +131,29 @@ async def upload_audio(
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {error}")
     
     # Create database entry
-    media_entry = UserMedia(
-        user_id='testing-user', #user.id
-        media_type=MediaType.AUDIO,
-        file_name=Path(s3_key).name,
-        original_file_name=file.filename,
-        s3_key=s3_key,
-        s3_url=s3_url,
-        file_size=file_size,
-        mime_type=file.content_type,
-        media_metadata={}
-    )
+    # media_entry = UserMedia(
+    #     user_id=test_user_id, #user.id
+    #     media_type=MediaType.AUDIO,
+    #     file_name=Path(s3_key).name,
+    #     original_file_name=file.filename,
+    #     s3_key=s3_key,
+    #     s3_url=s3_url,
+    #     file_size=file_size,
+    #     mime_type=file.content_type,
+    #     media_metadata={}
+    # )
     
-    db.add(media_entry)
-    db.commit()
-    db.refresh(media_entry)
+    # db.add(media_entry)
+    # db.commit()
+    # db.refresh(media_entry)
     
-    logger.info(f"User {'testing-user'} uploaded audio file: {file.filename} -> {s3_key}")
+    # logger.info(f"User {test_user_id} uploaded audio file: {file.filename} -> {s3_key}")
     
-    return media_entry
+    #return media_entry
+    return {'status': 'success', 's3_url': s3_url}
 
 
-@router.post("/upload/image", response_model=UserMediaUploadResponse)
+@router.post("/upload/image") #, response_model=UserMediaUploadResponse)
 async def upload_image(
     file: UploadFile = File(...),
     #user: Profile = Depends(get_current_user),
@@ -164,6 +167,8 @@ async def upload_image(
     """
     # Validate file
     validate_file(file, MediaType.IMAGE)
+    import uuid
+    test_user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
     
     # Check file size
     file_content = await file.read()
@@ -178,7 +183,7 @@ async def upload_image(
     # Generate S3 key
     file_ext = Path(file.filename).suffix.lower()
     s3_key = s3_client.generate_s3_key(
-        user_id=str('testing-user'), #user.id
+        user_id=str(test_user_id), #user.id
         media_type="image",
         file_extension=file_ext
     )
@@ -192,7 +197,7 @@ async def upload_image(
         s3_key=s3_key,
         content_type=file.content_type,
         media_metadata={
-            'user_id': str('testing-user'), #user.id
+            'user_id': str(test_user_id), #user.id
             'original_filename': file.filename
         }
     )
@@ -202,25 +207,26 @@ async def upload_image(
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {error}")
     
     # Create database entry
-    media_entry = UserMedia(
-        user_id='testing-user', #user.id
-        media_type=MediaType.IMAGE,
-        file_name=Path(s3_key).name,
-        original_file_name=file.filename,
-        s3_key=s3_key,
-        s3_url=s3_url,
-        file_size=file_size,
-        mime_type=file.content_type,
-        media_metadata={}
-    )
+    # media_entry = UserMedia(
+    #     user_id=test_user_id, #user.id
+    #     media_type=MediaType.IMAGE,
+    #     file_name=Path(s3_key).name,
+    #     original_file_name=file.filename,
+    #     s3_key=s3_key,
+    #     s3_url=s3_url,
+    #     file_size=file_size,
+    #     mime_type=file.content_type,
+    #     media_metadata={}
+    # )
     
-    db.add(media_entry)
-    db.commit()
-    db.refresh(media_entry)
+    # db.add(media_entry)
+    # db.commit()
+    # db.refresh(media_entry)
     
-    logger.info(f"User {'testing-user'} uploaded image file: {file.filename} -> {s3_key}")
+    # logger.info(f"User {'testing-user'} uploaded image file: {file.filename} -> {s3_key}")
     
-    return media_entry
+    # return media_entry
+    return {'status': 'success', 's3_url': s3_url}
 
 
 @router.get("/list", response_model=List[UserMediaListResponse])
