@@ -173,6 +173,45 @@ async def get_checkout_url(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/customer-portal")
+async def get_customer_portal(
+    send_email: bool = False,
+    db: Session = Depends(get_db),
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
+):
+    """Get customer portal URL for managing subscriptions"""
+    try:
+        # Get user email from Supabase
+        supabase = get_supabase()
+        response = supabase.auth.admin.get_user_by_id(current_user_id)
+        user_email = response.user.email
+        
+        # Get customer ID from Dodo Payments
+        customer_id = dodo_service.get_customer_by_email(user_email)
+        
+        if not customer_id:
+            raise HTTPException(
+                status_code=404,
+                detail="Customer not found. Please create a subscription first."
+            )
+        
+        # Create customer portal session
+        portal_data = dodo_service.create_customer_portal(
+            customer_id=customer_id,
+            send_email=send_email
+        )
+        
+        return {
+            "portal_url": portal_data["portal_url"],
+            "customer_id": customer_id
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # APPLE IAP (iOS)
 # ============================================================================

@@ -159,6 +159,40 @@ class DodoPaymentService:
         except Exception as e:
             logger.error(f"Dodo subscription plan change failed: {str(e)}")
             raise Exception(f"Subscription plan change failed: {str(e)}")
+    
+    def get_customer_by_email(self, email: str) -> Optional[str]:
+        """Get customer ID by email from Dodo Payments"""
+        try:
+            customers = self.client.customers.list()
+            for customer in customers:
+                if customer.email == email:
+                    return customer.customer_id
+            return None
+        
+        except Exception as e:
+            logger.error(f"Failed to get customer by email: {str(e)}")
+            raise Exception(f"Failed to get customer by email: {str(e)}")
+    
+    def create_customer_portal(
+        self,
+        customer_id: str,
+        send_email: bool = False
+    ) -> Dict[str, Any]:
+        """Create customer portal session"""
+        try:
+            portal = self.client.customers.customer_portal.create(
+                customer_id=customer_id,
+                send_email=send_email
+            )
+            
+            return {
+                "portal_url": portal.link,
+                "customer_id": customer_id
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to create customer portal: {str(e)}")
+            raise Exception(f"Failed to create customer portal: {str(e)}")
 
 
 # Singleton instance

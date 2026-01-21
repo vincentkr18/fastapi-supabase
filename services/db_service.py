@@ -295,3 +295,48 @@ class PaymentDatabaseService:
 
 # Singleton instance
 db_service = PaymentDatabaseService()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# subscription.renewed
+
+
+# {"business_id":"bus_0NWhCtEDgCj7VYcSfv5Ny","data":{"addons":[],"billing":{"city":"puducherry","country":"IN","state":"puducherry","street":"jhj","zipcode":"605004"},"cancel_at_next_billing_date":false,"cancelled_at":null,"created_at":"2026-01-21T09:19:24.179841Z","currency":"USD","custom_field_responses":null,"customer":{"customer_id":"cus_0NWl8bompLiPJv9qVzG79","email":"abdul.khaliqqq18@gmail.com","metadata":{},"name":"abdul.khaliqqq18","phone_number":null},"discount_cycles_remaining":null,"discount_id":null,"expires_at":"2036-01-21T09:22:14.651719Z","metadata":{"billing_cycle":"monthly","plan_name":"Creator"},"meters":[],"next_billing_date":"2026-02-21T09:22:14.651719Z","on_demand":false,"payload_type":"Subscription","payment_frequency_count":1,"payment_frequency_interval":"Month","payment_method_id":"pm_1fXY1lhJG2YBmfMP8vJ2","previous_billing_date":"2026-01-21T09:19:24.179841Z","product_id":"pdt_0NWhg1XVar7kI7iyYtaIH","quantity":1,"recurring_pre_tax_amount":18000,"status":"active","subscription_id":"sub_0NWl8bp5gQj1pigNCrtN8","subscription_period_count":10,"subscription_period_interval":"Year","tax_id":null,"tax_inclusive":false,"trial_period_days":0},"timestamp":"2026-01-21T09:22:14.623792Z","type":"subscription.renewed"}
+
+# subscription.updated
+
+# {"business_id":"bus_0NWhCtEDgCj7VYcSfv5Ny","data":{"addons":[],"billing":{"city":"puducherry","country":"IN","state":"puducherry","street":"jhj","zipcode":"605004"},"cancel_at_next_billing_date":false,"cancelled_at":null,"created_at":"2026-01-21T09:19:24.179841Z","currency":"USD","custom_field_responses":null,"customer":{"customer_id":"cus_0NWl8bompLiPJv9qVzG79","email":"abdul.khaliqqq18@gmail.com","metadata":{},"name":"abdul.khaliqqq18","phone_number":null},"discount_cycles_remaining":null,"discount_id":null,"expires_at":"2036-01-21T09:22:14.651719Z","metadata":{"billing_cycle":"monthly","plan_name":"Creator"},"meters":[],"next_billing_date":"2026-02-21T09:22:14.651719Z","on_demand":false,"payload_type":"Subscription","payment_frequency_count":1,"payment_frequency_interval":"Month","payment_method_id":"pm_1fXY1lhJG2YBmfMP8vJ2","previous_billing_date":"2026-01-21T09:19:24.179841Z","product_id":"pdt_0NWhg1XVar7kI7iyYtaIH","quantity":1,"recurring_pre_tax_amount":18000,"status":"active","subscription_id":"sub_0NWl8bp5gQj1pigNCrtN8","subscription_period_count":10,"subscription_period_interval":"Year","tax_id":null,"tax_inclusive":false,"trial_period_days":0},"timestamp":"2026-01-21T09:22:14.623792Z","type":"subscription.updated"}
+
+
+# subscription.active
+
+# {"business_id":"bus_0NWhCtEDgCj7VYcSfv5Ny","data":{"addons":[],"billing":{"city":"puducherry","country":"IN","state":"puducherry","street":"jhj","zipcode":"605004"},"cancel_at_next_billing_date":false,"cancelled_at":null,"created_at":"2026-01-21T09:19:24.179841Z","currency":"USD","custom_field_responses":null,"customer":{"customer_id":"cus_0NWl8bompLiPJv9qVzG79","email":"abdul.khaliqqq18@gmail.com","metadata":{},"name":"abdul.khaliqqq18","phone_number":null},"discount_cycles_remaining":null,"discount_id":null,"expires_at":"2036-01-21T09:22:14.651719Z","metadata":{"billing_cycle":"monthly","plan_name":"Creator"},"meters":[],"next_billing_date":"2026-02-21T09:22:14.651719Z","on_demand":false,"payload_type":"Subscription","payment_frequency_count":1,"payment_frequency_interval":"Month","payment_method_id":"pm_1fXY1lhJG2YBmfMP8vJ2","previous_billing_date":"2026-01-21T09:19:24.179841Z","product_id":"pdt_0NWhg1XVar7kI7iyYtaIH","quantity":1,"recurring_pre_tax_amount":18000,"status":"active","subscription_id":"sub_0NWl8bp5gQj1pigNCrtN8","subscription_period_count":10,"subscription_period_interval":"Year","tax_id":null,"tax_inclusive":false,"trial_period_days":0},"timestamp":"2026-01-21T09:22:14.623792Z","type":"subscription.active"}
+
+# payment.succeeded
+
+# {"business_id":"bus_0NWhCtEDgCj7VYcSfv5Ny","data":{"billing":{"city":"puducherry","country":"IN","state":"puducherry","street":"jhj","zipcode":"605004"},"brand_id":"bus_0NWhCtEDgCj7VYcSfv5Ny","business_id":"bus_0NWhCtEDgCj7VYcSfv5Ny","card_holder_name":"test","card_issuing_country":null,"card_last_four":"1450","card_network":"visa","card_type":"credit","checkout_session_id":"cks_0NWl8MA6VXptApStvkdwf","created_at":"2026-01-21T09:19:24.179841Z","currency":"INR","custom_field_responses":null,"customer":{"customer_id":"cus_0NWl8bompLiPJv9qVzG79","email":"abdul.khaliqqq18@gmail.com","metadata":{},"name":"abdul.khaliqqq18","phone_number":null},"digital_products_delivered":false,"discount_id":null,"disputes":[],"error_code":null,"error_message":null,"invoice_id":"inv_0NWl8bpK29EyEe1zKuV3K","invoice_url":"https://test.dodopayments.com/invoices/payments/pay_0NWl8bp1ue5lPh1lGyG4I","metadata":{"billing_cycle":"monthly","plan_name":"Creator"},"payload_type":"Payment","payment_id":"pay_0NWl8bp1ue5lPh1lGyG4I","payment_link":"https://test.checkout.dodopayments.com/4R2OSF4E","payment_method":"card","payment_method_type":"credit","product_cart":null,"refunds":[],"settlement_amount":21240,"settlement_currency":"USD","settlement_tax":3240,"status":"succeeded","subscription_id":"sub_0NWl8bp5gQj1pigNCrtN8","tax":309091,"total_amount":2026266,"updated_at":null},"timestamp":"2026-01-21T09:22:14.623792Z","type":"payment.succeeded"}
