@@ -30,7 +30,7 @@ async def list_plans(
     if active_only:
         plans = plans.filter(Plan.is_active == True)
     
-    #plans = plans.order_by(Plan.pricing).all()
+    plans = plans.all()
     return plans
 
 
