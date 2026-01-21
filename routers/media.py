@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 
 from database import get_db
-from models import UserMedia, Profile
+from models import UserMedia
 from schemas import UserMediaUploadResponse, UserMediaListResponse, MediaType
 from utils.auth import get_current_user_id
 from utils.s3_client import s3_client

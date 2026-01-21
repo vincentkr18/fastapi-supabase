@@ -9,7 +9,7 @@ from uuid import UUID
 from datetime import datetime
 
 from database import get_db
-from models import Subscription, SubscriptionHistory, Plan, Profile
+from models import Subscription, Plan
 from schemas import (
     SubscriptionCreate,
     SubscriptionResponse,

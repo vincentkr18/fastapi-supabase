@@ -9,7 +9,7 @@ from typing import Annotated
 from uuid import UUID
 
 from database import get_db
-from models import Profile
+#from models import Profile
 from schemas import ProfileResponse, ProfileUpdate, MessageResponse
 from utils.auth import get_current_user_id, get_current_user
 from utils.supabase_client import get_supabase_client
