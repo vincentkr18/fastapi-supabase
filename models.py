@@ -14,26 +14,6 @@ import uuid
 # models.py
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
 
-class Profile(Base):
-    """
-    User profile table - supplements Supabase auth.users.
-    Uses same UUID as auth.users.id.
-    """
-    __tablename__ = "profiles"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    first_name = Column(String(100), nullable=True)
-    last_name = Column(String(100), nullable=True)
-    display_name = Column(String(150), nullable=True)
-    email = Column(String(255), nullable=True, index=True)
-    avatar_url = Column(String(500), nullable=True)
-    extra_meta = Column(JSON, nullable=True, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
-    # Relationships
-    subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete-orphan")
-    payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
 
 
 class Plan(Base):
@@ -72,7 +52,7 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # Directly reference Supabase auth.users.id
     plan_id = Column(UUID(as_uuid=True), ForeignKey("plans.id", ondelete="RESTRICT"), nullable=False, index=True)
     
     # Provider info
@@ -99,7 +79,7 @@ class Subscription(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
-    user = relationship("Profile", back_populates="subscriptions")
+    # user = relationship("Profile", back_populates="subscriptions")
     plan = relationship("Plan", back_populates="subscriptions")
     payments = relationship("Payment", back_populates="subscription", cascade="all, delete-orphan")
 
@@ -111,7 +91,7 @@ class Payment(Base):
     __tablename__ = "payments"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # Directly reference Supabase auth.users.id
     subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True, index=True)
     
     # Provider
@@ -140,7 +120,7 @@ class Payment(Base):
     completed_at = Column(DateTime, nullable=True)
     
     # Relationships
-    user = relationship("Profile", back_populates="payments")
+    # user = relationship("Profile", back_populates="payments")
     subscription = relationship("Subscription", back_populates="payments")
 
 
@@ -152,7 +132,7 @@ class APIKey(Base):
     __tablename__ = "api_keys"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # Directly reference Supabase auth.users.id
     
     # Security
     key_hash = Column(String(255), nullable=False, unique=True, index=True)  # Hashed key
@@ -170,7 +150,7 @@ class APIKey(Base):
     last_used = Column(DateTime, nullable=True)
     
     # Relationships
-    user = relationship("Profile", backref="api_keys")
+    # user = relationship("Profile", backref="api_keys")
 
 
 class WebhookEvent(Base):
@@ -277,7 +257,7 @@ class UserMedia(Base):
     __tablename__ = "user_media"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # Directly reference Supabase auth.users.id
     media_type = Column(String(20), nullable=False)  # audio, image
     file_name = Column(String(255), nullable=False)
     original_file_name = Column(String(255), nullable=False)
@@ -290,4 +270,4 @@ class UserMedia(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
-    user = relationship("Profile")
+    # user = relationship("Profile")

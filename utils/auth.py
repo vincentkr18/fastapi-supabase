@@ -204,11 +204,12 @@ async def get_current_user(
         HTTPException: If authorization header is missing or invalid
     """
     token = credentials.credentials
+    print(token)
     logger.info(f"Token received (first 20 chars): {token[:20]}...")
     
     # Verify and extract full payload
     payload = jwt_validator.verify_token(token)
-    logger.info(f"Authenticated user: {payload.get('sub')}")
+    logger.info(f"Authenticated user: {payload.get('sub')},  {payload.get('email')}")
     return payload
 
 
@@ -236,7 +237,7 @@ async def get_current_user_id(
     
     # Verify and extract user ID
     user_id = jwt_validator.get_user_id(token)
-    logger.info(f"Authenticated user: {user_id}")
+    logger.info(f"Authenticated user id: {user_id}")
     return user_id
 
 

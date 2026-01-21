@@ -4,14 +4,14 @@ Handles audio and image uploads to S3 with database tracking.
 """
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Annotated
 import logging
 from pathlib import Path
 
 from database import get_db
 from models import UserMedia, Profile
 from schemas import UserMediaUploadResponse, UserMediaListResponse, MediaType
-from utils.auth import get_current_user
+from utils.auth import get_current_user_id
 from utils.s3_client import s3_client
 
 router = APIRouter(prefix="/api/v1/media", tags=["User Media"])
@@ -265,15 +265,18 @@ async def list_user_media(
 @router.get("/{media_id}", response_model=UserMediaListResponse)
 async def get_media_by_id(
     media_id: str,
-    user: Profile = Depends(get_current_user),
+    current_user_id: Annotated[str, Depends(get_current_user_id)],
     db: Session = Depends(get_db)
 ):
     """
     Get details of a specific media file by ID.
     """
+    from uuid import UUID
+    user_id = UUID(current_user_id)
+    
     media = db.query(UserMedia).filter(
         UserMedia.id == media_id,
-        UserMedia.user_id == user.id
+        UserMedia.user_id == user_id
     ).first()
     
     if not media:
@@ -285,16 +288,19 @@ async def get_media_by_id(
 @router.delete("/{media_id}")
 async def delete_media(
     media_id: str,
-    user: Profile = Depends(get_current_user),
+    current_user_id: Annotated[str, Depends(get_current_user_id)],
     db: Session = Depends(get_db)
 ):
     """
     Delete a media file from S3 and database.
     """
+    from uuid import UUID
+    user_id = UUID(current_user_id)
+    
     # Find the media entry
     media = db.query(UserMedia).filter(
         UserMedia.id == media_id,
-        UserMedia.user_id == user.id
+        UserMedia.user_id == user_id
     ).first()
     
     if not media:
@@ -311,7 +317,7 @@ async def delete_media(
     db.delete(media)
     db.commit()
     
-    logger.info(f"User {user.id} deleted media {media_id}: {media.file_name}")
+    logger.info(f"User {user_id} deleted media {media_id}: {media.file_name}")
     
     return {
         "message": "Media deleted successfully",

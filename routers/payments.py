@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Annotated
 from uuid import UUID
 from datetime import datetime, timedelta
 
@@ -20,7 +20,7 @@ from services.apple_service import apple_service
 from services.google_service import google_service
 from services.db_service import db_service
 from database import get_db
-from utils.auth import get_current_user  # Your auth dependency
+from utils.auth import get_current_user_id
 from models import Plan
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/payments", tags=["payments"])
 async def create_dodo_payment(
     request: DodoPaymentRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Create a new payment via Dodo Payments (Web)"""
     try:
@@ -49,7 +49,7 @@ async def create_dodo_payment(
         
         # Create payment in Dodo
         payment_data = await dodo_service.create_payment(
-            user_id=str(current_user["id"]),
+            user_id=current_user_id,
             amount=amount,
             currency="USD",
             plan_id=str(request.plan_id),
@@ -59,7 +59,7 @@ async def create_dodo_payment(
         # Create payment record in DB
         db_service.create_payment(
             db=db,
-            user_id=current_user["id"],
+            user_id=UUID(current_user_id),
             provider="dodo",
             provider_payment_id=payment_data["id"],
             amount=amount,
@@ -87,7 +87,7 @@ async def create_dodo_payment(
 async def verify_dodo_payment(
     payment_id: str,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Verify a Dodo payment status"""
     try:
@@ -115,7 +115,7 @@ async def verify_dodo_payment(
 async def verify_apple_receipt(
     request: AppleReceiptValidation,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Verify Apple receipt and create/update subscription"""
     try:
@@ -171,7 +171,7 @@ async def verify_apple_receipt(
             
             subscription = db_service.create_subscription(
                 db=db,
-                user_id=current_user["id"],
+                user_id=UUID(current_user_id),
                 plan_id=plan.id,
                 provider="apple",
                 provider_subscription_id=subscription_info["original_transaction_id"],
@@ -183,7 +183,7 @@ async def verify_apple_receipt(
             # Create payment record
             db_service.create_payment(
                 db=db,
-                user_id=current_user["id"],
+                user_id=UUID(current_user_id),
                 provider="apple",
                 provider_payment_id=subscription_info["transaction_id"],
                 amount=0,  # Apple doesn't provide amount in receipt
@@ -208,7 +208,7 @@ async def verify_apple_receipt(
 async def verify_google_purchase(
     request: GooglePurchaseToken,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Verify Google Play purchase and create/update subscription"""
     try:
@@ -274,7 +274,7 @@ async def verify_google_purchase(
                 
                 subscription = db_service.create_subscription(
                     db=db,
-                    user_id=current_user["id"],
+                    user_id=UUID(current_user_id),
                     plan_id=plan.id,
                     provider="google",
                     provider_subscription_id=request.purchase_token,
@@ -288,7 +288,7 @@ async def verify_google_purchase(
                 
                 db_service.create_payment(
                     db=db,
-                    user_id=current_user["id"],
+                    user_id=UUID(current_user_id),
                     provider="google",
                     provider_payment_id=request.purchase_token,
                     amount=amount,
@@ -318,12 +318,12 @@ async def verify_google_purchase(
 async def get_user_subscriptions(
     active_only: bool = False,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Get all subscriptions for current user"""
-    print(current_user)
+    print(current_user_id)
     subscriptions = db_service.get_user_subscriptions(
-        db, current_user["id"], active_only
+        db, UUID(current_user_id), active_only
     )
     return subscriptions
 
@@ -332,7 +332,7 @@ async def get_user_subscriptions(
 async def get_subscription(
     subscription_id: UUID,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Get specific subscription"""
     subscription = db_service.get_subscription(db, subscription_id)
@@ -340,7 +340,7 @@ async def get_subscription(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    if subscription.user_id != current_user["id"]:
+    if subscription.user_id != UUID(current_user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     return subscription
@@ -351,7 +351,7 @@ async def cancel_subscription(
     subscription_id: UUID,
     request: CancelSubscriptionRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
 ):
     """Cancel a subscription"""
     subscription = db_service.get_subscription(db, subscription_id)
@@ -359,7 +359,7 @@ async def cancel_subscription(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    if subscription.user_id != current_user["id"]:
+    if subscription.user_id != UUID(current_user_id):
         raise HTTPException(status_code=403, detail="Not authorized")
     
     try:
@@ -393,7 +393,7 @@ async def cancel_subscription(
 async def create_refund(
     request: RefundRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)  # Should have admin check
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None  # Should have admin check
 ):
     """Create a refund (admin only)"""
     payment = db_service.get_payment_by_provider_id(db, str(request.payment_id))

@@ -1,3 +1,4 @@
+
 """
 User profile endpoints.
 Authenticated users can view and update their own profile.
@@ -98,3 +99,32 @@ async def get_current_user_from_supabase(
         "iat": current_user.get("iat"),
         "exp": current_user.get("exp")
     }
+
+
+
+
+@router.post("/add", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
+async def add_user_to_profile(
+    user_id: str,
+    profile_data: ProfileUpdate = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new user profile in the Profile table.
+    Accepts user_id and optional profile fields.
+    """
+    uid = UUID(user_id)
+    existing_profile = db.query(Profile).filter(Profile.id == uid).first()
+    if existing_profile:
+        raise HTTPException(status_code=400, detail="Profile already exists for this user.")
+
+    profile = Profile(id=uid)
+    if profile_data:
+        update_data = profile_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(profile, field, value)
+
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile

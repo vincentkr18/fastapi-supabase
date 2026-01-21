@@ -1,3 +1,4 @@
+
 """
 Script to populate plans table with Dodo payment product IDs
 """
@@ -129,8 +130,46 @@ def populate_plans():
     finally:
         db.close()
 
+# Add a default 'basic' plan with $0 if not present
+from models import Plan
+from database import get_db
+from sqlalchemy.orm import Session
+
+def add_basic_plan():
+    db: Session = next(get_db())
+    basic_plan = db.query(Plan).filter(Plan.name == "basic").first()
+    if not basic_plan:
+        plan = Plan(
+            id=uuid.uuid4(),
+            name="Basic",
+            description="Default free plan",
+            pricing={"monthly_usd": 0, "annual_usd": 0},
+            provider_ids={"dodo_monthly": "", "dodo_annual": ""},
+            features={},
+            is_active=True
+        )
+        db.add(plan)
+        db.commit()
+        
+        print("Added default 'basic' plan.")
+        print(f"\n{plan.name} (ID: {plan.id})")
+    else:
+        print("'basic' plan already exists.")
+
+    
+def delete_all_plans():
+    db: Session = next(get_db())
+    deleted = db.query(Plan).delete()
+    db.commit()
+    print(f"Deleted {deleted} plans from the table.")
+
+
 
 if __name__ == "__main__":
-    print("Starting plan population...")
+    print("Deleteing plan population...")
+    print("="*60)
+    delete_all_plans()
+    print("Starting new plan population...")
     print("="*60)
     populate_plans()
+    add_basic_plan()

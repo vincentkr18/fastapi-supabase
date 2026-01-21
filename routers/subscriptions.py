@@ -17,7 +17,7 @@ from schemas import (
     SubscriptionHistoryResponse,
     MessageResponse
 )
-from utils.auth import get_current_user
+from utils.auth import get_current_user_id
 
 router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 @router.post("", response_model=SubscriptionResponse, status_code=status.HTTP_201_CREATED)
 async def create_subscription(
     subscription_data: SubscriptionCreate,
-    current_user_id: Annotated[str, Depends(get_current_user)],
+    current_user_id: Annotated[str, Depends(get_current_user_id)],
     db: Session = Depends(get_db)
 ):
     """
@@ -96,7 +96,7 @@ async def create_subscription(
 
 @router.get("/me", response_model=Optional[SubscriptionResponse])
 async def get_current_subscription(
-    current_user_id: Annotated[str, Depends(get_current_user)],
+    current_user_id: Annotated[str, Depends(get_current_user_id)],
     db: Session = Depends(get_db)
 ):
     """
@@ -117,7 +117,7 @@ async def get_current_subscription(
 @router.post("/me/cancel", response_model=MessageResponse)
 async def cancel_subscription(
     cancel_data: SubscriptionCancel,
-    current_user_id: Annotated[str, Depends(get_current_user)],
+    current_user_id: Annotated[str, Depends(get_current_user_id)],
     db: Session = Depends(get_db)
 ):
     """
@@ -164,7 +164,7 @@ async def cancel_subscription(
 
 @router.get("/me/history", response_model=List[SubscriptionHistoryResponse])
 async def get_subscription_history(
-    current_user_id: Annotated[str, Depends(get_current_user)],
+    current_user_id: Annotated[str, Depends(get_current_user_id)],
     db: Session = Depends(get_db)
 ):
     """
