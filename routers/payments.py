@@ -22,6 +22,9 @@ from services.db_service import db_service
 from database import get_db
 from utils.auth import get_current_user_id
 from models import Plan
+from database import get_supabase
+
+
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
 
@@ -48,9 +51,14 @@ async def create_dodo_payment(
             raise HTTPException(status_code=400, detail="Plan not configured for Dodo Payments")
         
         # Get user email from metadata or use user_id as fallback
-        user_email = request.metadata.get("user_email", f"{current_user_id}@temp.com")
-        user_name = request.metadata.get("user_name", "Customer")
-        
+        # user_email = request.metadata.get("user_email", f"{current_user_id}@temp.com")
+        # user_name = request.metadata.get("user_name", "Customer")
+        supabase = get_supabase()
+    
+        response = supabase.auth.admin.get_user_by_id(current_user_id)
+        user_email = response.user.email
+        user_name  = user_email.split('@')[0]
+
         # Create checkout session in Dodo
         payment_data = dodo_service.create_payment(
             user_id=current_user_id,
@@ -127,16 +135,25 @@ async def get_checkout_url(
         plan = db_service.get_plan(db, request.plan_id)
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
-        
+        print(type(request.metadata))
         # Get Dodo product_id from plan
-        product_id = plan.provider_ids.get("dodo")
+        if request.metadata['billing_cycle'] == 'monthly':
+            product_id = plan.provider_ids.get("dodo_monthly")
+        else:
+            product_id = plan.provider_ids.get("dodo_yearly")
         if not product_id:
             raise HTTPException(status_code=400, detail="Plan not configured for Dodo Payments")
         
         # Get user email from metadata or use user_id as fallback
-        user_email = request.metadata.get("user_email", f"{current_user_id}@temp.com")
-        user_name = request.metadata.get("user_name", "Customer")
+       
+        supabase = get_supabase()
+    
+        response = supabase.auth.admin.get_user_by_id(current_user_id)
+        user_email = response.user.email
+        user_name  = user_email.split('@')[0]
+
         
+        print(current_user_id, user_email, user_name)
         # Create checkout session in Dodo
         payment_data = dodo_service.create_payment(
             user_id=current_user_id,

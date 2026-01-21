@@ -39,6 +39,9 @@ class DodoPaymentService:
         Returns checkout session details including checkout URL
         """
         try:
+            return_url=f"{self.settings.webhook_base_url}/payment/success",
+            print(return_url)
+
             session = self.client.checkout_sessions.create(
                 product_cart=[{"product_id": product_id, "quantity": quantity}],
                 customer={
@@ -48,11 +51,11 @@ class DodoPaymentService:
                 return_url=f"{self.settings.webhook_base_url}/payment/success",
                 metadata=metadata or {}
             )
+            print(session.checkout_url)
             
             return {
-                "id": session.id,
+                "id": session.session_id,
                 "checkout_url": session.checkout_url,
-                "status": session.status
             }
         
         except Exception as e:
