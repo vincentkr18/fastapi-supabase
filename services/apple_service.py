@@ -10,10 +10,10 @@ class AppleIAPService:
     """Service for handling Apple In-App Purchase verification"""
     
     def __init__(self):
-        settings = get_settings()
-        self.shared_secret = settings.apple_shared_secret
-        self.bundle_id = settings.apple_bundle_id
-        self.verify_url = getattr(settings, 'apple_verify_url', None)
+        self.settings = get_settings()
+        self.shared_secret = self.settings.apple_shared_secret
+        self.bundle_id = self.settings.apple_bundle_id
+        self.verify_url = getattr(self.settings, 'apple_verify_url', None)
     
     async def verify_receipt(self, receipt_data: str) -> Dict[str, Any]:
         """

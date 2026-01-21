@@ -12,10 +12,10 @@ class GooglePlayService:
     """Service for handling Google Play In-App Purchase verification"""
     
     def __init__(self):
-        settings = get_settings()
-        self.package_name = settings.google_package_name
-        self.service_account_file = settings.google_service_account_json
-        self.api_version = settings.google_publisher_api_version
+        self.settings = get_settings()
+        self.package_name = self.settings.google_package_name
+        self.service_account_file = self.settings.google_service_account_json
+        self.api_version = self.settings.google_publisher_api_version
         self._service = None
     
     def _get_service(self):

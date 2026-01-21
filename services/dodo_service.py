@@ -13,11 +13,11 @@ class DodoPaymentService:
     """Service for handling Dodo Payments integration"""
     
     def __init__(self):
-        settings = get_settings()
-        self.api_key = settings.dodo_api_key
-        self.api_secret = settings.dodo_api_secret
-        self.base_url = settings.dodo_base_url
-        self.webhook_secret = settings.dodo_webhook_secret
+        self.settings = get_settings()
+        self.api_key = self.settings.dodo_api_key
+        self.api_secret = self.settings.dodo_api_secret
+        self.base_url = self.settings.dodo_base_url
+        self.webhook_secret = self.settings.dodo_webhook_secret
     
     def _get_headers(self) -> Dict[str, str]:
         """Get API headers for Dodo Payments"""
@@ -46,8 +46,8 @@ class DodoPaymentService:
                     "id": user_id
                 },
                 "metadata": metadata or {},
-                "return_url": f"{Settings.webhook_base_url}/payment/success",
-                "cancel_url": f"{Settings.webhook_base_url}/payment/cancel"
+                "return_url": f"{self.settings.webhook_base_url}/payment/success",
+                "cancel_url": f"{self.settings.webhook_base_url}/payment/cancel"
             }
             
             async with httpx.AsyncClient() as client:
