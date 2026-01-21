@@ -14,7 +14,7 @@ from schemas import PlanResponse
 router = APIRouter(prefix="/plans", tags=["Plans"])
 
 
-@router.get("", response_model=List[PlanResponse])
+@router.get("")
 async def list_plans(
     db: Session = Depends(get_db),
     active_only: bool = True
@@ -25,12 +25,12 @@ async def list_plans(
     Public endpoint - no authentication required.
     By default, only returns active plans.
     """
-    query = db.query(Plan)
+    plans = db.query(Plan)
     
     if active_only:
-        query = query.filter(Plan.active == True)
+        plans = plans.filter(Plan.is_active == True)
     
-    plans = query.order_by(Plan.price_monthly).all()
+    #plans = plans.order_by(Plan.pricing).all()
     return plans
 
 
