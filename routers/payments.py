@@ -321,6 +321,7 @@ async def get_user_subscriptions(
     current_user = Depends(get_current_user)
 ):
     """Get all subscriptions for current user"""
+    print(current_user)
     subscriptions = db_service.get_user_subscriptions(
         db, current_user["id"], active_only
     )
