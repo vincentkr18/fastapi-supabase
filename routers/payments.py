@@ -42,19 +42,27 @@ async def create_dodo_payment(
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
         
-        # Get amount from plan pricing
-        amount = plan.pricing.get("monthly_usd", 0)
-        if amount <= 0:
-            raise HTTPException(status_code=400, detail="Invalid plan pricing")
+        # Get Dodo product_id from plan
+        product_id = plan.provider_ids.get("dodo")
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Plan not configured for Dodo Payments")
         
-        # Create payment in Dodo
-        payment_data = await dodo_service.create_payment(
+        # Get user email from metadata or use user_id as fallback
+        user_email = request.metadata.get("user_email", f"{current_user_id}@temp.com")
+        user_name = request.metadata.get("user_name", "Customer")
+        
+        # Create checkout session in Dodo
+        payment_data = dodo_service.create_payment(
             user_id=current_user_id,
-            amount=amount,
-            currency="USD",
-            plan_id=str(request.plan_id),
+            user_email=user_email,
+            user_name=user_name,
+            product_id=product_id,
+            quantity=1,
             metadata=request.metadata
         )
+        
+        # Get amount from plan pricing
+        amount = plan.pricing.get("monthly_usd", 0)
         
         # Create payment record in DB
         db_service.create_payment(
@@ -91,7 +99,7 @@ async def verify_dodo_payment(
 ):
     """Verify a Dodo payment status"""
     try:
-        payment_data = await dodo_service.verify_payment(payment_id)
+        payment_data = dodo_service.verify_payment(payment_id)
         
         # Update payment in DB
         payment = db_service.get_payment_by_provider_id(db, payment_id)
@@ -102,6 +110,47 @@ async def verify_dodo_payment(
                 )
         
         return {"status": payment_data["status"], "data": payment_data}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/checkout-url")
+async def get_checkout_url(
+    request: DodoPaymentRequest,
+    db: Session = Depends(get_db),
+    current_user_id: Annotated[str, Depends(get_current_user_id)] = None
+):
+    """Get checkout URL for a plan (simplified endpoint)"""
+    try:
+        # Get plan details
+        plan = db_service.get_plan(db, request.plan_id)
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        
+        # Get Dodo product_id from plan
+        product_id = plan.provider_ids.get("dodo")
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Plan not configured for Dodo Payments")
+        
+        # Get user email from metadata or use user_id as fallback
+        user_email = request.metadata.get("user_email", f"{current_user_id}@temp.com")
+        user_name = request.metadata.get("user_name", "Customer")
+        
+        # Create checkout session in Dodo
+        payment_data = dodo_service.create_payment(
+            user_id=current_user_id,
+            user_email=user_email,
+            user_name=user_name,
+            product_id=product_id,
+            quantity=1,
+            metadata=request.metadata
+        )
+        
+        return {
+            "checkout_url": payment_data["checkout_url"],
+            "payment_id": payment_data["id"]
+        }
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -365,7 +414,10 @@ async def cancel_subscription(
     try:
         # Cancel with provider
         if subscription.provider == "dodo":
-            await dodo_service.cancel_subscription(subscription.provider_subscription_id)
+            dodo_service.cancel_subscription(
+                subscription.provider_subscription_id,
+                cancel_at_period_end=request.cancel_at_period_end
+            )
         elif subscription.provider == "google":
             plan = db_service.get_plan(db, subscription.plan_id)
             product_id = plan.provider_ids.get("google")
@@ -403,7 +455,7 @@ async def create_refund(
     
     try:
         if payment.provider == "dodo":
-            await dodo_service.create_refund(
+            dodo_service.create_refund(
                 payment.provider_payment_id,
                 request.amount,
                 request.reason

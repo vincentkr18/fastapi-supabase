@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 
 from config import get_settings
 from database import engine, Base
-from routers import payments, webhooks, users, plans, api_keys, webhooks, job, kling, lip_sync, sora2, templates, veo, media, waitlist
+from routers import payments, webhooks, users, plans, api_keys, job, kling, lip_sync, sora2, templates, veo, media, waitlist
 
 # Security scheme for Swagger UI
 security = HTTPBearer()
@@ -219,7 +219,6 @@ app.include_router(kling.router)
 app.include_router(sora2.router)
 app.include_router(veo.router)
 app.include_router(lip_sync.router)
-app.include_router(webhooks.router)
 
 app.include_router(payments.router)
 app.include_router(waitlist.router)
